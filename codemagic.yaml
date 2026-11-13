@@ -1,0 +1,28 @@
+workflows:
+  ios-unsigned:
+    name: ChargeMeter unsigned IPA
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment:
+      xcode: latest
+    scripts:
+      - name: Generate Xcode project
+        script: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Build
+        script: |
+          set -o pipefail
+          xcodebuild -project ChargeMeter.xcodeproj \
+            -target ChargeMeter -sdk iphoneos -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build | tail -40
+      - name: Package IPA
+        script: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/ChargeMeter.app Payload/
+          zip -qry ChargeMeter-unsigned.ipa Payload
+          ls -lh ChargeMeter-unsigned.ipa
+    artifacts:
+      - ChargeMeter-unsigned.ipa
